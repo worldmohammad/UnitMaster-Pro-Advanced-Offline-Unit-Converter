@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitMaster Pro Demo - Advanced Unit Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6; --primary-dark: #1d4ed8; --secondary: #8b5cf6;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-800: #1f2937; --gray-900: #111827;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .unit-card {
+            transition: all 0.3s ease; border: 2px solid transparent;
+        }
+        .unit-card:hover {
+            transform: translateY(-3px); border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+        }
+        .unit-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+        }
+        .category-btn { transition: all 0.2s ease; }
+        .category-btn.active { background-color: var(--primary); color: white; transform: scale(1.03); }
+        .conversion-input:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .history-item { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .loading-spinner {
+            border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6;
+            border-radius: 50%; width: 28px; height: 28px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .dark { --gray-50: #111827; --gray-100: #1f2937; --gray-800: #f3f4f6; --gray-900: #f9fafb; }
+        .dark .glass-effect { background: rgba(31, 41, 55, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .dark body { background: linear-gradient(135deg, #1e3a8a 0%, #111827 100%); }
+        
+        /* Watermarks */
+        body::before {
+            content: 'DEMO VERSION - Not for Production Use';
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 4vw; color: rgba(239, 68, 68, 0.1);
+            white-space: nowrap; pointer-events: none; z-index: 9998;
+            font-weight: 900; user-select: none; letter-spacing: 6px;
+        }
+        body::after {
+            content: 'Upgrade at digitalyar.company';
+            position: fixed; top: 20%; left: 10%; transform: rotate(20deg);
+            font-size: 2.5vw; color: rgba(37, 99, 235, 0.07);
+            white-space: nowrap; pointer-events: none; z-index: 9997;
+            font-weight: 700; user-select: none;
+        }
+        .pro-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706); color: white;
+            font-size: 0.6rem; padding: 2px 6px; border-radius: 8px; font-weight: 700;
+            text-transform: uppercase; margin-left: 4px;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+    </style>
+</head>
+<body class="text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Upgrade Banner -->
+    <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center py-2 px-4 text-sm font-semibold">
+        ⚠️ <strong>DEMO MODE:</strong> 5 categories only. History & Favorites disabled. 
+        <a href="https://digitalyar.company/product/spa05-unitmaster/" target="_blank" class="underline font-bold hover:no-underline">Upgrade to Full Version →</a>
+    </div>
+
+    <header class="glass-effect sticky top-0 z-40 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-exchange-alt text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            UnitMaster Pro <span class="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full align-middle ml-1">DEMO</span>
+                        </h1>
+                        <p class="text-xs text-gray-600 dark:text-gray-300">Advanced Engineering & Scientific Converter — Demo</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="theme-toggle" title="Toggle Dark Mode" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
+                    <button onclick="showProAlert('History')" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all relative opacity-60 cursor-not-allowed" title="Pro Feature">
+                        <i class="fas fa-history"></i>
+                        <span class="pro-badge absolute -top-1 -right-1">PRO</span>
+                    </button>
+                    <button onclick="showProAlert('Favorites')" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all relative opacity-60 cursor-not-allowed" title="Pro Feature">
+                        <i class="fas fa-star"></i>
+                        <span class="pro-badge absolute -top-1 -right-1">PRO</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-1">
+                <div class="glass-effect rounded-2xl p-5 shadow-lg mb-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center"><i class="fas fa-layer-group mr-2 text-blue-500"></i>Categories</h3>
+                    <div class="space-y-2" id="category-list"></div>
+                </div>
+                <div class="glass-effect rounded-2xl p-5 shadow-lg">
+                    <h3 class="font-bold text-lg mb-4 flex items-center"><i class="fas fa-crown mr-2 text-yellow-500"></i>Go Pro</h3>
+                    <p class="text-sm text-gray-500 mb-4">Unlock 12+ categories, history, favorites & more.</p>
+                    <a href="https://digitalyar.company/product/spa05-unitmaster/" target="_blank" class="block w-full p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-center font-bold hover:shadow-lg transition-all">
+                        <i class="fas fa-rocket mr-2"></i> Upgrade Now
+                    </a>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6">
+                <div class="glass-effect rounded-2xl p-6 shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h3 class="font-bold text-lg">Input Value</h3>
+                            <input type="number" id="input-value" class="w-full p-4 pl-12 text-2xl font-bold rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 conversion-input" value="1" step="any">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">From Unit</label>
+                                    <select id="from-unit" class="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Prefix</label>
+                                    <select id="from-prefix" class="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+                                        <option value="1">None</option><option value="1000">Kilo (k)</option><option value="0.001">Milli (m)</option><option value="0.000001">Micro (μ)</option><option value="1000000">Mega (M)</option><option value="1000000000">Giga (G)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-bold text-lg">Output Value</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="swapUnits()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><i class="fas fa-exchange-alt"></i></button>
+                                    <button onclick="copyResult()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"><i class="fas fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <input type="text" id="output-value" class="w-full p-4 pl-12 text-2xl font-bold rounded-xl border-2 border-green-300 dark:border-green-600 bg-white dark:bg-gray-800 text-green-700 dark:text-green-400" readonly>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">To Unit</label>
+                                    <select id="to-unit" class="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Prefix</label>
+                                    <select id="to-prefix" class="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+                                        <option value="1">None</option><option value="1000">Kilo (k)</option><option value="0.001">Milli (m)</option><option value="0.000001">Micro (μ)</option><option value="1000000">Mega (M)</option><option value="1000000000">Giga (G)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button onclick="convert()" class="flex-1 min-w-[120px] p-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-xl text-white font-bold transition-all">Convert</button>
+                        <button onclick="resetConversion()" class="px-6 py-4 bg-gray-600 hover:bg-gray-700 rounded-xl text-white font-bold transition-all">Reset</button>
+                        <button onclick="showProAlert('Share')" class="px-6 py-4 bg-purple-600 hover:bg-purple-700 rounded-xl text-white font-bold transition-all opacity-70" title="Pro Feature">Share <span class="pro-badge">PRO</span></button>
+                    </div>
+                </div>
+
+                <div class="glass-effect rounded-2xl p-6 shadow-lg">
+                    <h3 class="font-bold text-lg mb-4 flex items-center"><i class="fas fa-th-large mr-2 text-purple-500"></i>Available Units</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" id="unit-cards"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast" class="hidden fixed bottom-4 right-4 glass-effect rounded-xl p-4 shadow-2xl max-w-sm z-50">
+        <div class="flex items-start">
+            <div id="toast-icon" class="mr-3 text-xl"></div>
+            <div class="flex-1">
+                <div id="toast-title" class="font-bold"></div>
+                <div id="toast-message" class="text-sm mt-1 text-gray-600 dark:text-gray-300"></div>
+            </div>
+            <button onclick="hideToast()" class="ml-3 text-gray-500">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        const DEMO_CATEGORIES = ['length', 'mass', 'time', 'temperature', 'pressure'];
+        const DB_NAME = 'UnitMasterDemo_v1';
+        let db, currentCategory = 'length', unitDatabase = {};
+        let appSettings = { decimalPlaces: 4, numberFormat: 'en', darkMode: false, showSymbols: true };
+
+        function showProAlert(feature) {
+            alert(`🔒 ${feature} is a Pro feature.\n\nUpgrade to the full version at digitalyar.company to unlock all 12+ categories, history, favorites, export, and more.`);
+        }
+
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains('categories')) d.createObjectStore('categories', { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('units')) { const s = d.createObjectStore('units', { keyPath: 'id' }); s.createIndex('category', 'category', { unique: false }); }
+            if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'id' });
+        };
+        request.onsuccess = async (e) => { db = e.target.result; await populateDB(); await loadDB(); initApp(); };
+
+        async function countR(s) { return new Promise(r => db.transaction([s],'readonly').objectStore(s).count().onsuccess = e => r(e.target.result)); }
+        async function addR(s, d) { return new Promise(r => db.transaction([s],'readwrite').objectStore(s).add(d).onsuccess = e => r(e.target.result)); }
+        async function getAllR(s, idx, q) { return new Promise(r => { const t = db.transaction([s],'readonly'); const o = t.objectStore(s); (idx&&q ? o.index(idx).getAll(q) : o.getAll()).onsuccess = e => r(e.target.result); }); }
+
+        async function populateDB() {
+            const cnt = await countR('categories');
+            if (cnt > 0) return;
+
+            const data = {
+                length: { name:'Length', icon:'fas fa-ruler-combined', desc:'Distance and length units.', dimension:'L', units:[
+                    {id:'meter',name:'Meter',toBase:1,symbol:'m',field:'Common',dimension:'L'},
+                    {id:'centimeter',name:'Centimeter',toBase:0.01,symbol:'cm',field:'Common',dimension:'L'},
+                    {id:'millimeter',name:'Millimeter',toBase:0.001,symbol:'mm',field:'Engineering',dimension:'L'},
+                    {id:'kilometer',name:'Kilometer',toBase:1000,symbol:'km',field:'Surveying',dimension:'L'},
+                    {id:'inch',name:'Inch',toBase:0.0254,symbol:'in',field:'US Customary',dimension:'L'},
+                    {id:'foot',name:'Foot',toBase:0.3048,symbol:'ft',field:'US Customary',dimension:'L'},
+                    {id:'yard',name:'Yard',toBase:0.9144,symbol:'yd',field:'Sports',dimension:'L'},
+                    {id:'mile',name:'Mile',toBase:1609.344,symbol:'mi',field:'Surveying',dimension:'L'}
+                ]},
+                mass: { name:'Mass', icon:'fas fa-weight-scale', desc:'Mass and weight units.', dimension:'M', units:[
+                    {id:'kilogram',name:'Kilogram',toBase:1,symbol:'kg',field:'Common',dimension:'M'},
+                    {id:'gram',name:'Gram',toBase:0.001,symbol:'g',field:'Common',dimension:'M'},
+                    {id:'milligram',name:'Milligram',toBase:0.000001,symbol:'mg',field:'Medical',dimension:'M'},
+                    {id:'ton',name:'Ton (Metric)',toBase:1000,symbol:'t',field:'Industrial',dimension:'M'},
+                    {id:'pound',name:'Pound',toBase:0.45359237,symbol:'lb',field:'US Customary',dimension:'M'},
+                    {id:'ounce',name:'Ounce',toBase:0.0283495,symbol:'oz',field:'Common',dimension:'M'}
+                ]},
+                time: { name:'Time', icon:'fas fa-clock', desc:'Duration and time units.', dimension:'T', units:[
+                    {id:'second',name:'Second',toBase:1,symbol:'s',field:'Common',dimension:'T'},
+                    {id:'minute',name:'Minute',toBase:60,symbol:'min',field:'Common',dimension:'T'},
+                    {id:'hour',name:'Hour',toBase:3600,symbol:'h',field:'Common',dimension:'T'},
+                    {id:'day',name:'Day',toBase:86400,symbol:'d',field:'Common',dimension:'T'},
+                    {id:'week',name:'Week',toBase:604800,symbol:'wk',field:'Common',dimension:'T'},
+                    {id:'year',name:'Year',toBase:31536000,symbol:'yr',field:'Astronomy',dimension:'T'},
+                    {id:'millisecond',name:'Millisecond',toBase:0.001,symbol:'ms',field:'Computing',dimension:'T'}
+                ]},
+                temperature: { name:'Temperature', icon:'fas fa-thermometer-half', desc:'Thermal energy level units.', dimension:'Θ', special:true, units:[
+                    {id:'celsius',name:'Celsius',symbol:'°C',field:'Common',dimension:'Θ'},
+                    {id:'fahrenheit',name:'Fahrenheit',symbol:'°F',field:'US Customary',dimension:'Θ'},
+                    {id:'kelvin',name:'Kelvin',symbol:'K',field:'Scientific',dimension:'Θ'}
+                ]},
+                pressure: { name:'Pressure', icon:'fas fa-tachometer-alt', desc:'Force per area units.', dimension:'ML⁻¹T⁻²', units:[
+                    {id:'pascal',name:'Pascal',toBase:1,symbol:'Pa',field:'Scientific',dimension:'ML⁻¹T⁻²'},
+                    {id:'kilopascal',name:'Kilopascal',toBase:1000,symbol:'kPa',field:'Engineering',dimension:'ML⁻¹T⁻²'},
+                    {id:'bar',name:'Bar',toBase:100000,symbol:'bar',field:'Industrial',dimension:'ML⁻¹T⁻²'},
+                    {id:'atmosphere',name:'Atmosphere',toBase:101325,symbol:'atm',field:'Meteorology',dimension:'ML⁻¹T⁻²'},
+                    {id:'psi',name:'PSI',toBase:6894.76,symbol:'psi',field:'Engineering',dimension:'ML⁻¹T⁻²'},
+                    {id:'torr',name:'Torr',toBase:133.322,symbol:'Torr',field:'Medical',dimension:'ML⁻¹T⁻²'}
+                ]}
+            };
+
+            for (const [id, cat] of Object.entries(data)) {
+                await addR('categories', { id, name: cat.name, icon: cat.icon, description: cat.desc, dimension: cat.dimension, special: cat.special || false });
+                for (const u of cat.units) await addR('units', { ...u, category: id, description: `${u.name} (${u.symbol})` });
+            }
+            await addR('settings', { id:'app', ...appSettings });
+        }
+
+        async function loadDB() {
+            const cats = await getAllR('categories');
+            for (const c of cats) {
+                const units = await getAllR('units', 'category', c.id);
+                unitDatabase[c.id] = { ...c, units: {} };
+                for (const u of units) unitDatabase[c.id].units[u.id] = u;
+            }
+        }
+
+        function initApp() {
+            renderCategories();
+            loadCategory('length');
+            document.getElementById('input-value').addEventListener('input', convert);
+            document.getElementById('from-unit').addEventListener('change', convert);
+            document.getElementById('to-unit').addEventListener('change', convert);
+            document.getElementById('from-prefix').addEventListener('change', convert);
+            document.getElementById('to-prefix').addEventListener('change', convert);
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            setTimeout(convert, 100);
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('category-list');
+            container.innerHTML = Object.entries(unitDatabase).map(([id, cat]) => `
+                <button onclick="loadCategory('${id}')" class="w-full p-3 rounded-xl text-left category-btn transition-all flex items-center justify-between mb-2 ${id===currentCategory?'active':'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}">
+                    <div class="flex items-center"><i class="${cat.icon} w-6 text-center mr-3 ${id===currentCategory?'text-white':'text-gray-600'}"></i><span class="font-medium">${cat.name}</span></div>
+                    <span class="text-xs px-2 py-1 rounded-full bg-white dark:bg-gray-700 font-bold">${Object.keys(cat.units).length}</span>
+                </button>`).join('');
+        }
+
+        function loadCategory(catId) {
+            currentCategory = catId;
+            const cat = unitDatabase[catId];
+            if (!cat) return;
+            renderCategories();
+            loadUnits(catId);
+            loadDropdowns(catId);
+        }
+
+        function loadUnits(catId) {
+            const cat = unitDatabase[catId];
+            const container = document.getElementById('unit-cards');
+            let html = '';
+            let i = 0;
+            for (const [key, unit] of Object.entries(cat.units)) {
+                html += `<div class="unit-card p-3 rounded-xl text-center cursor-pointer bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 ${i===0?'active':''}" onclick="selectUnit('${key}')" data-unit="${key}">
+                    <div class="text-xl mb-1 font-medium text-blue-600">${appSettings.showSymbols ? unit.symbol : unit.name.charAt(0)}</div>
+                    <div class="text-xs font-semibold">${unit.name}</div>
+                    <div class="text-xs text-gray-400 mt-1">${unit.field}</div>
+                </div>`;
+                i++;
+            }
+            container.innerHTML = html;
+        }
+
+        function loadDropdowns(catId) {
+            const cat = unitDatabase[catId];
+            const from = document.getElementById('from-unit');
+            const to = document.getElementById('to-unit');
+            from.innerHTML = ''; to.innerHTML = '';
+            const keys = Object.keys(cat.units);
+            for (const [key, unit] of Object.entries(cat.units)) {
+                from.innerHTML += `<option value="${key}">${unit.name} (${unit.symbol})</option>`;
+                to.innerHTML += `<option value="${key}">${unit.name} (${unit.symbol})</option>`;
+            }
+            if (keys.length >= 2) { from.value = keys[0]; to.value = keys[1]; }
+        }
+
+        function selectUnit(key) {
+            document.getElementById('from-unit').value = key;
+            document.querySelectorAll('.unit-card').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.unit-card[data-unit="${key}"]`)?.classList.add('active');
+            convert();
+        }
+
+        function convert() {
+            const iv = parseFloat(document.getElementById('input-value').value) || 0;
+            const fu = document.getElementById('from-unit').value;
+            const tu = document.getElementById('to-unit').value;
+            const fp = parseFloat(document.getElementById('from-prefix').value);
+            const tp = parseFloat(document.getElementById('to-prefix').value);
+            if (!fu || !tu) return;
+
+            const cat = unitDatabase[currentCategory];
+            let result;
+
+            if (cat.special && currentCategory === 'temperature') {
+                let c;
+                switch(fu) { case 'celsius': c=iv; break; case 'fahrenheit': c=(iv-32)*5/9; break; case 'kelvin': c=iv-273.15; break; default: c=iv; }
+                switch(tu) { case 'celsius': result=c; break; case 'fahrenheit': result=(c*9/5)+32; break; case 'kelvin': result=c+273.15; break; default: result=c; }
+            } else {
+                const fromU = cat.units[fu];
+                const toU = cat.units[tu];
+                if (!fromU || !toU) return;
+                result = (iv * fromU.toBase / fp) * tp / toU.toBase;
+            }
+
+            document.getElementById('output-value').value = result.toFixed(appSettings.decimalPlaces);
+        }
+
+        function swapUnits() {
+            const fu = document.getElementById('from-unit'), tu = document.getElementById('to-unit');
+            const fp = document.getElementById('from-prefix'), tp = document.getElementById('to-prefix');
+            [fu.value, tu.value] = [tu.value, fu.value];
+            [fp.value, tp.value] = [tp.value, fp.value];
+            convert();
+        }
+
+        function resetConversion() { document.getElementById('input-value').value = '1'; convert(); }
+        function copyResult() {
+            const v = document.getElementById('output-value').value;
+            if (v) navigator.clipboard.writeText(v).then(() => showToast('Copied!', 'Result copied to clipboard', 'success'));
+        }
+
+        function showToast(title, msg, type='info') {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-message').textContent = msg;
+            document.getElementById('toast-icon').textContent = type==='success'?'✅':'ℹ️';
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2500);
+        }
+        function hideToast() { document.getElementById('toast').classList.add('hidden'); }
+
+        function toggleTheme() {
+            appSettings.darkMode = !appSettings.darkMode;
+            if (appSettings.darkMode) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+            const icon = document.querySelector('#theme-toggle i');
+            icon.className = appSettings.darkMode ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // Disable right-click
+        document.addEventListener('contextmenu', e => { e.preventDefault(); alert('⛔ Demo version. Purchase at digitalyar.company'); });
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey && e.key==='s') || (e.ctrlKey && e.key==='u') || (e.ctrlKey && e.shiftKey && e.key==='i') || e.key==='F12') e.preventDefault();
+        });
+    </script>
+</body>
+</html>
